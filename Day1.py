@@ -57,11 +57,21 @@ def get_stopwords(file: str = '/Users/huyiwen/Corpora/stopwords/hit_stopwords.tx
     return set(stopwords)
 
 
-def tokenize(text: str, filterate_stopwords: bool = True) -> Iterable[str]:
+def tokenize(text: str, filterate_stopwords: bool = True, chinese: bool = True, digits: bool = False, alphabets: bool = False)\
+        -> Iterable[str]:
     """remove all the characters other than alphabets, chinese characters and numbders from text and then
     tokenize the text."""
     stopwords = get_stopwords()
-    processed = jieba.lcut(re.sub(r'[^ \u4e00-\u9fa5^A-Z^a-z^0-9]', '', text)) | select(lambda x: x.strip())\
+    pattern = r'[^ '
+    if chinese:
+        pattern += r'^\u4e00-\u9fa5'
+    if digits:
+        pattern += r'^0-9'
+    if alphabets:
+        pattern += r'^A-Z^a-z'
+    pattern += r']'
+
+    processed = jieba.lcut(re.sub(pattern, '', text)) | select(lambda x: x.strip())\
                     | where(lambda x: bool(x))
     if filterate_stopwords:
         processed = processed | where(lambda x: x not in stopwords)
