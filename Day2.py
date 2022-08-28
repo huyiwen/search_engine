@@ -1,15 +1,19 @@
+"""Day2 Retrieve all pages from internet"""
+
 import json
-from os.path import splitext
 import re
 import os
-from typing import Iterable, List, Set
-from Day1 import url2str, get_all_links, html2pure
+from os.path import splitext
 from queue import Queue
-from pipe import where
 from time import sleep
 from random import random
-from urllib.parse import urlparse
 from datetime import datetime
+from typing import Iterable, List, Set
+
+from urllib.parse import urlparse
+from pipe import where
+
+from Day1 import url2str, get_all_links, html2pure, tokenize
 
 
 class FileSaver:
@@ -32,8 +36,10 @@ class FileSaver:
 
         with open(os.path.join(self.directory, str(self.count) + ext), 'w', encoding='utf-8') as f:
             f.write(html)
+
+        text = tokenize(html2pure(html))
         with open(os.path.join(self.directory, str(self.count) + '.txt'), 'w', encoding='utf-8') as f:
-            f.write(html2pure(html))
+            f.writelines(text)
 
         self.mapping[url] = self.count
 
