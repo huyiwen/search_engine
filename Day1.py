@@ -64,7 +64,7 @@ def tokenize(text: str, filterate_stopwords: bool = True, chinese: bool = True, 
     stopwords = get_stopwords()
     pattern = r'[^ '
     if chinese:
-        pattern += r'^\u4e00-\u9fa5'
+        pattern += r'\u4e00-\u9fa5'
     if digits:
         pattern += r'^0-9'
     if alphabets:
