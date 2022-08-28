@@ -2,15 +2,16 @@
 - extract all the links and convert them into absoulte ones
 - extract all the text from title and paragraphs, and then tokenize them"""
 
-import jieba
 import requests
 import re
-from fake_useragent import UserAgent
-from bs4 import BeautifulSoup, Tag
-from pipe import dedup, traverse, where, select, chain
+from typing import List, Iterable, Optional, Set
+
+import jieba
 from urllib.parse import urljoin
 from url_normalize import url_normalize
-from typing import List, Iterable, Optional
+from bs4 import BeautifulSoup, Tag
+from pipe import dedup, traverse, where, select, chain
+from fake_useragent import UserAgent
 
 def url2str(url: str, max_trial=5, timeout=1) -> Optional[str]:
     """Retrieve page into string."""
@@ -50,11 +51,20 @@ def html2pure(html: str) -> str:
     pure = re.sub(r'\n{2,}', '\n', pure)
     return pure
 
-def tokenize(text: str) -> Iterable[str]:
+def get_stopwords(file: str = '/Users/huyiwen/Corpora/stopwords/hit_stopwords.txt') -> Set[str]:
+    with open(file, 'r', encoding='utf-8') as f:
+        stopwords = f.readlines() | select(lambda x: x.strip('\n'))
+    return set(stopwords)
+
+
+def tokenize(text: str, filterate_stopwords: bool = True) -> Iterable[str]:
     """remove all the characters other than alphabets, chinese characters and numbders from text and then
     tokenize the text."""
+    stopwords = get_stopwords()
     processed = jieba.lcut(re.sub(r'[^ \u4e00-\u9fa5^A-Z^a-z^0-9]', '', text)) | select(lambda x: x.strip())\
                     | where(lambda x: bool(x))
+    if filterate_stopwords:
+        processed = processed | where(lambda x: x not in stopwords)
     return processed
 
 def get_all_links(html: str, link: str) -> Iterable[str]:
@@ -68,6 +78,10 @@ def get_all_links(html: str, link: str) -> Iterable[str]:
     return abs_links
 
 if __name__ == '__main__':
+    
+    if input('Test stopwrods (y/[n]): ') == 'y':
+        print(get_stopwords())
+
     link = input('link or file (default: http://www.ruc.edu.cn/): ') or 'http://www.ruc.edu.cn/'
     if link.startswith('http'):
         page = url2str(link)
@@ -77,7 +91,8 @@ if __name__ == '__main__':
 
     assert page is not None
     pure = html2pure(page)
-    pure = tokenize(pure)
+    yn = True if input('filterate stopwords (y/[n]):') == 'y' else False
+    pure = tokenize(pure, filterate_stopwords=yn)
     pure = ' '.join(pure)
     
     links = list(get_all_links(page, link))
