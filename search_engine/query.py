@@ -34,6 +34,9 @@ class Query:
         self.doc_num = int(self.idx2vec.docid.max()) + 1
 
     def query(self, query: str) -> List[str]:
+        queries = query.split(' ')
+        q_count = len(queries)
+        pattern = '|'.join(queries)
         qt = Counter(tokenize(query))
         scores = np.zeros(self.doc_num)
 
@@ -56,6 +59,15 @@ class Query:
         #logger.debug(f'every_scores:\n{every_scores}')
         #logger.debug(f'every_scores:\n{every_scores.loc[418]}')
         pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
+        logger.debug(pages)
+        logger.debug(sorted(scores)[:20])
+        for docid in pages:
+            with open('../pure/' + str(docid) + '.txt') as f:
+                s = len(re.findall(pattern, f.read())) / q_count * 0.5
+                scores[docid] -= s
+                logger.debug(s)
+        pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
+        logger.debug(sorted(scores)[:20])
         pages = list(pages | select(lambda x: self.idx2url[str(x)]))
         logger.debug(pages)
              
