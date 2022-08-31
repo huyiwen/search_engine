@@ -10,11 +10,9 @@ from json import JSONDecoder
 import logging
 from datetime import datetime
 
-import jieba
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
-from jieba import lcut
 from pipe import select, take, tee
 
 from reverse_dict import get_idx2url
@@ -81,7 +79,7 @@ class Query:
         return list(self.idx2url[idx] for idx in queries[0])
 
     def tfidf(self, query: str) -> List[str]:
-        qt = Counter(jieba.lcut(query))
+        qt = Counter(tokenize(query))
         scores = np.zeros_like(self.doc_len)
 
         every_scores = DataFrame(index=range(len(scores)))
