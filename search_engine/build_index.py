@@ -38,16 +38,19 @@ def get_scores(source: Iterable[Tuple[Iterable[str], int]], save: bool = True) -
     tf = pd.concat(source | build_dataframe, sort=False)
     tf['docid'] = tf['docid'].astype('uint16')
     n = int(tf[['docid']].max()) + 1
-    log_n = np.log10(n)
+    log_n = np.log(n)
 
     # print('Term Frequency')
     tf = tf.groupby(['keyword', 'docid'], as_index=False).size().rename(columns={'size': 'tf'}, copy=False)
     tf['tf'] = tf[['tf']].transform(lambda x: np.log10(x) + 1).astype('float32')
+    print(tf.describe())
 
     # print('Inverse Document Frequency')
     idf = tf.groupby('keyword', as_index=False).size().rename(columns={'size': 'idf'})
-    idf[['idf']] = idf[['idf']].agg(lambda x: log_n - np.log10(x)).astype('float32')
+    idf[['idf']] = idf[['idf']].agg(lambda x: log_n - np.log(x)).astype('float32')
     idf_factors = idf.idf.values[tf.keyword.factorize(sort=True)[0]]
+    print(idf.describe())
+    print(idf.set_index('keyword').loc['海军'])
     del idf
 
     # print('L2 Norm')
