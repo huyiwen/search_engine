@@ -46,9 +46,9 @@ class Query:
 
             pairs = self.idx2vec.loc[intersection].set_index('docid') * (np.log10(c) + 1)
 
-            #top_20 = pairs[['tf']].sort_values(by='tf', axis=0, ascending=False).iloc[:20].rename(columns={'tf': q})
+            top_20 = pairs[['score']].sort_values(by='score', axis=0, ascending=False).iloc[:20].rename(columns={'score': q})
             #every_scores[q] = top_20
-            #logger.debug(f"query scores:\n{top_20}\n")
+            logger.debug(f"query scores:\n{top_20}\n")
 
             scores[pairs.index] -= pairs[['score']].values.squeeze()
 

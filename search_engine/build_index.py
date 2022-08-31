@@ -50,7 +50,6 @@ def get_scores(source: Iterable[Iterable[str]], save: bool = True) -> DataFrame:
     idf = tf.groupby('keyword', as_index=False).size().rename(columns={'size': 'idf'})
     idf[['idf']] = idf[['idf']].agg(lambda x: log_n - np.log10(x)).astype('float32')
     idf_factors = idf.idf.values[tf.keyword.factorize(sort=True)[0]]
-    print(idf)
     del idf
 
     # print('L2 Norm')
@@ -66,7 +65,7 @@ def get_scores(source: Iterable[Iterable[str]], save: bool = True) -> DataFrame:
     tf['score'] = tf.score.values * l2norm_factors
     del l2norm_factors
     # print(f' * idf_factors {idf_factors.shape}, {idf_factors.dtype}')
-    tf['score'] = tf.score.values * idf_factors
+    #tf['score'] = tf.score.values * idf_factors
     del idf_factors
 
     if save:
