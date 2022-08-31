@@ -4,7 +4,7 @@ import getpass
 from urllib.parse import urljoin
 
 # Your Search Engine Function
-from query import evaluate
+from query import Query
 
 base_url = 'http://112.126.92.245:8080/'
 
@@ -40,9 +40,10 @@ def main():
     passwd = input_passwd()
     queries = login(idx, passwd)
 
+    q = Query()
     tot_urls = []
     for query in queries:
-        urls = evaluate(query)
+        urls = q.query(query)
         tot_urls.append(urls)
 
     mode, mrr = send_ans(idx, passwd, tot_urls)

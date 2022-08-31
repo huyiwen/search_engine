@@ -7,13 +7,14 @@ from math import sqrt
 from collections import defaultdict
 from typing import Optional, List, Union, Collection, Iterable, Tuple
 from datetime import datetime
+import time
 
 import torch
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-from pipe import select, where, take
-from pandas import DataFrame
+from pipe import Pipe, select, where, take
+from pandas import DataFrame, lreshape
 
 
 DOC_COLUMNS = ['keyword', 'docid']
@@ -21,8 +22,67 @@ TF_COLUMNS = ['keyword', 'size']
 FILENAME = datetime.now().strftime('index%Y-%b-%d_%H-%M-%S.pth')
 
 
-def build_index(directory: str = '../saved_pages', quick_test: int = 0, batch: int = 500)\
-        -> Tuple[dict, dict, np.ndarray]:
+@Pipe
+def build_dataframe(iterable):
+    idx = 0
+    for doc in iterable:
+        df = DataFrame(doc, columns=['keyword'], dtype='category')
+        df['docid'] = idx
+        df['docid'] = df['docid'].astype('uint16')
+        idx += 1
+        yield df
+
+
+def get_scores(source: Iterable[Iterable[str]], save: bool = True) -> DataFrame:
+    """
+    Args:
+        source: documents or queries
+    """
+    tf = pd.concat(source | build_dataframe, sort=False)
+    n = int(tf[['docid']].max()) + 1
+    log_n = np.log10(n)
+
+    print('Term Frequency')
+    tf = tf.groupby(['keyword', 'docid'], as_index=False).size().rename(columns={'size': 'tf'}, copy=False)
+    tf['tf'] = tf[['tf']].transform(lambda x: np.log10(x) + 1).astype('float32')
+
+    print('Inverse Document Frequency')
+    idf = tf.groupby('keyword', as_index=False).size().rename(columns={'size': 'idf'})
+    idf[['idf']] = idf[['idf']].agg(lambda x: log_n - np.log10(x)).astype('float32')
+    idf_factors = idf.idf.values[tf.keyword.factorize(sort=True)[0]]
+    del idf
+
+    print('L2 Norm')
+    l2norm = tf.rename(columns={'tf': 'l2norm'})
+    l2norm['l2norm'] = l2norm.groupby('docid')[['l2norm']].transform(lambda x: x ** 2)
+    l2norm = l2norm.groupby('docid')[['l2norm']].agg('sum').agg('sqrt')
+    l2norm_factors = l2norm.l2norm.values[tf.docid.factorize(sort=True)[0]]
+    del l2norm
+
+    print('TF-IDF Score')
+    tf = tf.rename(columns={'tf': 'score'})
+    print(f' * l2norm_factors {l2norm_factors.shape}, {l2norm_factors.dtype}')
+    tf['score'] = tf.score.values * l2norm_factors
+    del l2norm_factors
+    print(f' * idf_factors {idf_factors.shape}, {idf_factors.dtype}')
+    tf['score'] = tf.score.values * idf_factors
+    del idf_factors
+
+    if save:
+        print(f'Save: {FILENAME}')
+        torch.save(tf, FILENAME)
+
+    return tf
+
+
+@Pipe
+def read_keywords(iterable, direcotry):
+    for fn in iterable:
+        with open(os.path.join(direcotry, fn), 'r', encoding='utf-8') as f:
+            yield f.readlines() | select(lambda x: x.strip())
+
+
+def build_index(directory: str = '../saved_pages', quick_test: int = 0, batch: int = 500):
     """Build index (keyword, docid) pairs for every pages.
 
     Args:
@@ -39,70 +99,8 @@ def build_index(directory: str = '../saved_pages', quick_test: int = 0, batch: i
     kw_files = os.listdir(directory) | where(lambda x: x.endswith('.txt'))
     if quick_test > 0:
         kw_files = kw_files | take(quick_test)
-    kw_files = sorted(kw_files)
 
-    tf = DataFrame(columns=DOC_COLUMNS)
-    tf_temp = DataFrame(columns=DOC_COLUMNS)
-    count = 0
-
-    for file in tqdm(kw_files):
-
-        # read keywords
-        count += 1
-        idx = int(file[:-4])
-        with open(os.path.join(directory, file), 'r', encoding='utf-8') as f:
-            kws = f.readlines() | select(lambda x: x.strip())
-
-        # get keywords
-        kws = DataFrame(kws | select(lambda x: (x, idx)), columns=DOC_COLUMNS)
-
-        # append keywords
-        tf_temp = pd.concat((tf_temp, kws), sort=False)
-        if count == batch:
-            count = 0
-            tf = pd.concat((tf, tf_temp), sort=False)
-            tf_temp = DataFrame(columns=DOC_COLUMNS)
-
-    # append rest keywords
-    if count > 0:
-        tf = pd.concat((tf, tf_temp), sort=False)
-
-    # TF
-    #   get term freq and log n
-    tf = tf.groupby(['keyword', 'docid'], as_index=False).size()
-    log_n = np.log10(int(tf[['docid']].max()))
-    #   calc log tf
-    tf['tf'] = tf[['size']].apply(lambda x: np.log10(x) + 1)
-    #tf = tf.drop('size', axis=1).set_index('keyword')
-    #   build mapping "(keyword, docid)" -> tf (sorted by tf)
-    # tf_dict = tf.set_index(['keyword', 'docid']).T.to_dict('records')[0]
-    # tf_dict = dict(sorted(tf_dict.items(), key=lambda x: x[1]))
-
-    # DF
-    #   get doc freq
-    df = tf.groupby('keyword', as_index=False).size()
-    #   calc idf
-    df[['df']] = df[['size']].agg(lambda x: log_n - np.log10(x))
-    #   build mapping "keyword -> df" (sorted by df)
-    df_dict = df[['keyword', 'df']].set_index('keyword').T.to_dict('records')[0]
-    df_dict = dict(sorted(df_dict.items(), key=lambda x: x[1]))
-
-    # DL
-    #   get doc len
-    dl = tf
-    #   calc L2 norm
-    dl['dl'] = dl.groupby('docid')[['tf']].transform(lambda x: x ** 2)
-    dl = dl.groupby('docid')[['tf']].agg('sum').agg('sqrt')
-    #    build list mapping "docid -> len"
-    for idx in np.setdiff1d(np.arange(int(dl.index.max())+1), dl.index):
-        dl.loc[idx] = 0
-        print(idx)
-    doc_len = dl.sort_index().values
-
-    if not quick_test:
-        torch.save((tf, df_dict, doc_len), FILENAME)
-
-    return tf, df_dict, doc_len
+    return get_scores(tqdm(sorted(kw_files)) | read_keywords(directory), save=not bool(quick_test))
 
 
 def load_index():
@@ -110,22 +108,7 @@ def load_index():
 
 
 def main():
-    tf, df, doc_len = build_index(quick_test=0)
-    #torch.save(tf, 'tf.pth')
-    #torch.save(df, 'df.pth')
-    #torch.save(doc_len, 'doc_len.pth')
-
-    #tf, df, doc_len = torch.load('tf.pth'), torch.load('df.pth'), torch.load('doc_len.pth')
-    print(len(tf))
-    print(len(df))
-    print(doc_len)
-
-
-    # query2idx = pairs.to_dict()['docid']
-    # idx2url = get_idx2url()
-    # q = Query(query2idx, idx2url)
-    # while(1):
-    #     q.query(query=input('query: '), method='vanilla')
+    sc = build_index(quick_test=0)
 
 
 if __name__ == '__main__':
