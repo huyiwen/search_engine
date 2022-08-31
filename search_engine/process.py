@@ -52,7 +52,7 @@ def tokenize(text: str, filterate_stopwords: bool = True, chinese: bool = True, 
     pattern += r']'
     global seg
     if seg is None:
-        seg = pkuseg.pkuseg(model_name='web')
+        seg = pkuseg.pkuseg(model_name='news')
 
     processed = seg.cut(re.sub(pattern, ' ', text)) | select(lambda x: x.strip())\
                     | where(lambda x: len(x) > 1)
