@@ -81,7 +81,7 @@ class Query:
         return list(self.idx2url[idx] for idx in queries[0])
 
     def tfidf(self, query: str) -> List[str]:
-        qt = Counter(tokenize(query))
+        qt = Counter(jieba.lcut(query))
         scores = np.zeros_like(self.doc_len)
 
         every_scores = DataFrame(index=range(len(scores)))
