@@ -24,7 +24,7 @@ def save_tokenized(direcotry: str):
             fo.write('\n'.join(tokenize(html2pure(fi.read()))))
 
 if __name__ == '__main__':
-    #save_pure(input('save_pure direcotry: ') or '../saved_pages')
-    save_tokenized(input('save_tokenized direcotry: ') or '../saved_pages')
+    save_pure(input('save_pure direcotry: ') or '../saved_pages')
+    #save_tokenized(input('save_tokenized direcotry: ') or '../saved_pages')
 
 
