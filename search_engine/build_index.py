@@ -42,29 +42,30 @@ def get_scores(source: Iterable[Iterable[str]], save: bool = True) -> DataFrame:
     n = int(tf[['docid']].max()) + 1
     log_n = np.log10(n)
 
-    print('Term Frequency')
+    # print('Term Frequency')
     tf = tf.groupby(['keyword', 'docid'], as_index=False).size().rename(columns={'size': 'tf'}, copy=False)
     tf['tf'] = tf[['tf']].transform(lambda x: np.log10(x) + 1).astype('float32')
 
-    print('Inverse Document Frequency')
+    # print('Inverse Document Frequency')
     idf = tf.groupby('keyword', as_index=False).size().rename(columns={'size': 'idf'})
     idf[['idf']] = idf[['idf']].agg(lambda x: log_n - np.log10(x)).astype('float32')
     idf_factors = idf.idf.values[tf.keyword.factorize(sort=True)[0]]
+    print(idf)
     del idf
 
-    print('L2 Norm')
+    # print('L2 Norm')
     l2norm = tf.rename(columns={'tf': 'l2norm'})
     l2norm['l2norm'] = l2norm.groupby('docid')[['l2norm']].transform(lambda x: x ** 2)
     l2norm = l2norm.groupby('docid')[['l2norm']].agg('sum').agg('sqrt')
     l2norm_factors = l2norm.l2norm.values[tf.docid.factorize(sort=True)[0]]
     del l2norm
 
-    print('TF-IDF Score')
+    # print('TF-IDF Score')
     tf = tf.rename(columns={'tf': 'score'})
-    print(f' * l2norm_factors {l2norm_factors.shape}, {l2norm_factors.dtype}')
+    # print(f' * l2norm_factors {l2norm_factors.shape}, {l2norm_factors.dtype}')
     tf['score'] = tf.score.values * l2norm_factors
     del l2norm_factors
-    print(f' * idf_factors {idf_factors.shape}, {idf_factors.dtype}')
+    # print(f' * idf_factors {idf_factors.shape}, {idf_factors.dtype}')
     tf['score'] = tf.score.values * idf_factors
     del idf_factors
 

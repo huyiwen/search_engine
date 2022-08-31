@@ -11,7 +11,7 @@ def init_logger(logger, filename) -> logging.Logger:
     logger.addHandler(fh)
 
     sh = logging.StreamHandler()
-    sh.setLevel(logging.INFO)
+    sh.setLevel(logging.DEBUG)
     sh.setFormatter(formatter)
     logger.addHandler(sh)
     return logger

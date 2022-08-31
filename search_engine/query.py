@@ -30,36 +30,36 @@ class Query:
         decoder = JSONDecoder()
         with open('../json/2022-Aug-30_19-51-57.json', 'r', encoding='utf-8') as f:
             self.idx2url = decoder.decode(f.read())
-        self.idx2vec = load_index()
+        self.idx2vec = load_index().set_index('keyword')
+        self.doc_num = int(self.idx2vec.docid.max()) + 1
 
     def query(self, query: str) -> List[str]:
-        qt = tokenize(query)
-        scores = np.zeros_like(self.doc_len)
+        qt = Counter(tokenize(query))
+        scores = np.zeros(self.doc_num)
 
-        #every_scores = DataFrame(index=range(len(scores)))
         for q, c in qt.items():
-            c = np.log10(c) + 1  # tf
-            intersection = self.query2idx.index.intersection([q])
+            intersection = self.idx2vec.index.intersection([q])
 
             if len(intersection) == 0:
                 continue
             logger.debug(f'{q}: {c} ({intersection})')
 
-            pairs = self.query2idx.loc[intersection].set_index('docid') * c
+            pairs = self.idx2vec.loc[intersection].set_index('docid') * (np.log10(c) + 1)
 
             #top_20 = pairs[['tf']].sort_values(by='tf', axis=0, ascending=False).iloc[:20].rename(columns={'tf': q})
             #every_scores[q] = top_20
             #logger.debug(f"query scores:\n{top_20}\n")
 
-            scores[pairs.index] -= pairs[['tf']].values
+            scores[pairs.index] -= pairs[['score']].values.squeeze()
 
-        scores /= self.doc_len
         #every_scores.dropna(how='all', inplace=True)
         #logger.debug(f'every_scores:\n{every_scores}')
         #logger.debug(f'every_scores:\n{every_scores.loc[418]}')
         pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
+        pages = list(pages | select(lambda x: self.idx2url[str(x)]))
+        logger.debug(pages)
              
-        return list(pages | select(lambda x: self.idx2url[str(x)]))
+        return pages
 
 
 if __name__ == '__main__':
@@ -78,12 +78,14 @@ if __name__ == '__main__':
                 ans, query = line.strip().split('\t')
                 output = q.query(query=query)
                 line_count += 1
+                score = 0
                 for count, url in enumerate(output):
                     if url == ans:
-                        logger.info(f'[{query}]: {(20-count)/20}')
-                        logger.info(f'ans: {ans}\n')
-                        avg += (20 - count) / 20
+                        score = (20 - count) / 20
+                        avg += score
                         break
+                logger.info(f'[{query}]: {score}')
+                logger.info(f'ans: {ans}\n')
             logger.info(f'MRR@20: {avg / line_count}')
     logger.info(f'log: {FILENAME}')
 
