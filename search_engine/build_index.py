@@ -19,15 +19,14 @@ from pandas import DataFrame, lreshape
 
 DOC_COLUMNS = ['keyword', 'docid']
 TF_COLUMNS = ['keyword', 'size']
-FILENAME = datetime.now().strftime('index%Y-%b-%d_%H-%M-%S.pth')
+FILENAME = datetime.now().strftime('../index/index%Y-%b-%d_%H-%M-%S.pth')
 
 
 @Pipe
 def build_dataframe(iterable):
     for doc, idx in iterable:
-        df = DataFrame(doc, columns=['keyword'], dtype='category')
+        df = DataFrame(doc, columns=['keyword'])
         df['docid'] = idx
-        df['docid'] = df['docid'].astype('uint16')
         yield df
 
 
@@ -37,6 +36,7 @@ def get_scores(source: Iterable[Tuple[Iterable[str], int]], save: bool = True) -
         source: documents or queries
     """
     tf = pd.concat(source | build_dataframe, sort=False)
+    tf['docid'] = tf['docid'].astype('uint16')
     n = int(tf[['docid']].max()) + 1
     log_n = np.log10(n)
 
@@ -60,15 +60,18 @@ def get_scores(source: Iterable[Tuple[Iterable[str], int]], save: bool = True) -
     # print('TF-IDF Score')
     tf = tf.rename(columns={'tf': 'score'})
     # print(f' * l2norm_factors {l2norm_factors.shape}, {l2norm_factors.dtype}')
-    #tf['score'] = tf.score.values * l2norm_factors
+    tf['score'] = tf.score.values / l2norm_factors
     del l2norm_factors
     # print(f' * idf_factors {idf_factors.shape}, {idf_factors.dtype}')
-    #tf['score'] = tf.score.values * idf_factors
+    tf['score'] = tf.score.values * idf_factors
     del idf_factors
 
     if save:
         print(f'Save: {FILENAME}')
         torch.save(tf, FILENAME)
+        if os.path.islink('index.pth'):
+            os.remove('index.pth')
+            os.symlink(FILENAME, 'index.pth')
 
     return tf
 
