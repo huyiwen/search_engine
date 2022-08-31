@@ -5,7 +5,7 @@
 import re
 from typing import Iterable, Set
 
-import jieba
+import pkuseg
 from bs4 import BeautifulSoup
 from pipe import where, select
 
@@ -34,6 +34,9 @@ def get_stopwords(file: str = '/Users/huyiwen/Corpora/stopwords/hit_stopwords.tx
     return set(stopwords)
 
 
+seg = None
+
+
 def tokenize(text: str, filterate_stopwords: bool = True, chinese: bool = True, digits: bool = False, alphabets: bool = False)\
         -> Iterable[str]:
     """remove all the characters other than alphabets, chinese characters and numbders from text and then
@@ -47,8 +50,11 @@ def tokenize(text: str, filterate_stopwords: bool = True, chinese: bool = True, 
     if alphabets:
         pattern += r'^A-Z^a-z'
     pattern += r']'
+    global seg
+    if seg is None:
+        seg = pkuseg.pkuseg(model_name='web')
 
-    processed = jieba.cut_for_search(re.sub(pattern, ' ', text)) | select(lambda x: x.strip())\
+    processed = seg.cut(re.sub(pattern, ' ', text)) | select(lambda x: x.strip())\
                     | where(lambda x: len(x) > 1)
     if filterate_stopwords:
         processed = processed | where(lambda x: x not in stopwords)
