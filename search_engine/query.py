@@ -20,6 +20,7 @@ from pipe import select, take, tee
 from reverse_dict import get_idx2url
 from build_index import build_index, load_index
 from init_logger import init_logger
+from process import tokenize
 
 FILENAME = datetime.now().strftime('query%Y-%b-%d_%H-%M-%S.log')
 logger = init_logger(logging.getLogger(), FILENAME)
@@ -80,7 +81,7 @@ class Query:
         return list(self.idx2url[idx] for idx in queries[0])
 
     def tfidf(self, query: str) -> List[str]:
-        qt = Counter(jieba.lcut(query))
+        qt = Counter(tokenize(query))
         scores = np.zeros_like(self.doc_len)
 
         every_scores = DataFrame(index=range(len(scores)))

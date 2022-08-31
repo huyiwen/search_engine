@@ -48,7 +48,7 @@ def tokenize(text: str, filterate_stopwords: bool = True, chinese: bool = True, 
         pattern += r'^A-Z^a-z'
     pattern += r']'
 
-    processed = jieba.lcut(re.sub(pattern, ' ', text)) | select(lambda x: x.strip())\
+    processed = jieba.cut_for_search(re.sub(pattern, ' ', text)) | select(lambda x: x.strip())\
                     | where(lambda x: len(x) > 1)
     if filterate_stopwords:
         processed = processed | where(lambda x: x not in stopwords)
