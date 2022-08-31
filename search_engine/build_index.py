@@ -6,6 +6,7 @@ import re
 from math import sqrt
 from collections import defaultdict
 from typing import Optional, List, Union, Collection, Iterable, Tuple
+from datetime import datetime
 
 import torch
 import pandas as pd
@@ -17,6 +18,7 @@ from pandas import DataFrame
 
 DOC_COLUMNS = ['keyword', 'docid']
 TF_COLUMNS = ['keyword', 'size']
+FILENAME = datetime.now().strftime('index%Y-%b-%d_%H-%M-%S.pth')
 
 
 def build_index(directory: str = '../saved_pages', quick_test: int = 0, batch: int = 500)\
@@ -98,7 +100,7 @@ def build_index(directory: str = '../saved_pages', quick_test: int = 0, batch: i
     doc_len = dl.sort_index().values
 
     if not quick_test:
-        torch.save((tf, df_dict, doc_len), 'index.pth')
+        torch.save((tf, df_dict, doc_len), FILENAME)
 
     return tf, df_dict, doc_len
 

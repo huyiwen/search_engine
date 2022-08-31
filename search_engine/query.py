@@ -99,7 +99,7 @@ class Query:
         scores /= self.doc_len
         every_scores.dropna(how='all', inplace=True)
         logger.debug(f'every_scores:\n{every_scores}')
-        logger.debug(f'every_scores:\n{every_scores.loc[418]}')
+        #logger.debug(f'every_scores:\n{every_scores.loc[418]}')
         pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
              
         return list(pages | select(lambda x: self.idx2url[str(x)]))
@@ -108,7 +108,7 @@ class Query:
         query_method = getattr(self, method)
         result = query_method(query)
 
-        print(f'{method} query={query}\n{result}')
+        #print(f'{method} query={query}\n{result}')
         return result
 
 root = None
