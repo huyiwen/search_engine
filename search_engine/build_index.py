@@ -24,16 +24,14 @@ FILENAME = datetime.now().strftime('index%Y-%b-%d_%H-%M-%S.pth')
 
 @Pipe
 def build_dataframe(iterable):
-    idx = 0
-    for doc in iterable:
+    for doc, idx in iterable:
         df = DataFrame(doc, columns=['keyword'], dtype='category')
         df['docid'] = idx
         df['docid'] = df['docid'].astype('uint16')
-        idx += 1
         yield df
 
 
-def get_scores(source: Iterable[Iterable[str]], save: bool = True) -> DataFrame:
+def get_scores(source: Iterable[Tuple[Iterable[str], int]], save: bool = True) -> DataFrame:
     """
     Args:
         source: documents or queries
@@ -62,7 +60,7 @@ def get_scores(source: Iterable[Iterable[str]], save: bool = True) -> DataFrame:
     # print('TF-IDF Score')
     tf = tf.rename(columns={'tf': 'score'})
     # print(f' * l2norm_factors {l2norm_factors.shape}, {l2norm_factors.dtype}')
-    tf['score'] = tf.score.values * l2norm_factors
+    #tf['score'] = tf.score.values * l2norm_factors
     del l2norm_factors
     # print(f' * idf_factors {idf_factors.shape}, {idf_factors.dtype}')
     #tf['score'] = tf.score.values * idf_factors
@@ -79,7 +77,7 @@ def get_scores(source: Iterable[Iterable[str]], save: bool = True) -> DataFrame:
 def read_keywords(iterable, direcotry):
     for fn in iterable:
         with open(os.path.join(direcotry, fn), 'r', encoding='utf-8') as f:
-            yield f.readlines() | select(lambda x: x.strip())
+            yield (f.readlines() | select(lambda x: x.strip()), int(fn[:-4]))
 
 
 def build_index(directory: str = '../saved_pages', quick_test: int = 0, batch: int = 500):
@@ -100,7 +98,7 @@ def build_index(directory: str = '../saved_pages', quick_test: int = 0, batch: i
     if quick_test > 0:
         kw_files = kw_files | take(quick_test)
 
-    return get_scores(tqdm(sorted(kw_files)) | read_keywords(directory), save=not bool(quick_test))
+    return get_scores(tqdm(kw_files) | read_keywords(directory), save=not bool(quick_test))
 
 
 def load_index():
