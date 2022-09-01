@@ -36,7 +36,7 @@ class Query:
         self.doc_num = int(self.idx2vec.docid.max()) + 1
         seg = pkuseg.pkuseg('news')
         #self.cutter = seg.cut
-        self.cutter = jieba.lcut
+        self.cutter = jieba.lcut_for_search
 
     def query(self, query: str) -> List[str]:
         queries = query.split(' ')
@@ -70,7 +70,7 @@ class Query:
         logger.debug(sorted(scores)[:20])
         for docid in pages:
             with open('../pure/' + str(docid) + '.txt') as f:
-                s = np.log10(len(re.findall(pattern, f.read())) / q_count + 1) * 0.5
+                s = np.log(len(re.findall(pattern, f.read())) / q_count + 1) * 2
                 scores[docid] -= s
                 logger.debug(s)
 
