@@ -14,6 +14,8 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 from pipe import select, take, tee
+import jieba
+import pkuseg
 
 from reverse_dict import get_idx2url
 from build_index import load_index, get_scores
@@ -32,12 +34,15 @@ class Query:
             self.idx2url = decoder.decode(f.read())
         self.idx2vec = load_index().set_index('keyword')
         self.doc_num = int(self.idx2vec.docid.max()) + 1
+        seg = pkuseg.pkuseg('news')
+        #self.cutter = seg.cut
+        self.cutter = jieba.lcut
 
     def query(self, query: str) -> List[str]:
         queries = query.split(' ')
         q_count = len(queries)
-        pattern = '|'.join(queries)
-        qt = Counter(tokenize(query))
+        qt = Counter(self.cutter(query))
+        pattern = '|'.join(set(queries) - set(qt.items()))
         logger.info(f'query={query} ({q_count}) {qt.items()}')
         scores = np.zeros(self.doc_num)
 
@@ -59,17 +64,19 @@ class Query:
         #every_scores.dropna(how='all', inplace=True)
         #logger.debug(f'every_scores:\n{every_scores}')
         #logger.debug(f'every_scores:\n{every_scores.loc[418]}')
+
         pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
         logger.debug(pages)
         logger.debug(sorted(scores)[:20])
         for docid in pages:
             with open('../pure/' + str(docid) + '.txt') as f:
-                s = len(re.findall(pattern, f.read())) / q_count * 0.5
+                s = np.log10(len(re.findall(pattern, f.read())) / q_count + 1) * 0.5
                 scores[docid] -= s
                 logger.debug(s)
 
         pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
         logger.debug(sorted(scores)[:20])
+
         pages = list(pages | select(lambda x: self.idx2url[str(x)]))
         logger.debug(pages)
              
@@ -85,8 +92,8 @@ if __name__ == '__main__':
         while(1):
             q.query(query=input('query: ') or '项目')
     else:
+        scores = []
         with open(tsv, 'r', encoding='utf-8') as f:
-            avg = 0.
             line_count = 0
             for line in f.readlines():
                 ans, query = line.strip().split('\t')
@@ -96,11 +103,12 @@ if __name__ == '__main__':
                 for count, url in enumerate(output):
                     if url == ans:
                         score = (20 - count) / 20
-                        avg += score
                         break
+                scores.append(score)
                 logger.info(f'[{query}]: {score}')
                 logger.info(f'ans: {ans}\n')
-            logger.info(f'MRR@20: {avg / line_count}')
+            logger.info(f'MRR@20: {sum(scores) / line_count}')
+            logger.info(scores)
     logger.info(f'log: {FILENAME}')
 
 
