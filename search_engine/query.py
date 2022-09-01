@@ -38,6 +38,7 @@ class Query:
         q_count = len(queries)
         pattern = '|'.join(queries)
         qt = Counter(tokenize(query))
+        logger.info(f'query={query} ({q_count}) {qt.items()}')
         scores = np.zeros(self.doc_num)
 
         for q, c in qt.items():
