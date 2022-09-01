@@ -1,9 +1,10 @@
 """Day3
 - Build index"""
 
+import sys
 import os
 import re
-from typing import Optional, List, Union, Collection, Iterable
+from typing import Optional, List, Union, Collection, Iterable, Tuple
 from collections import defaultdict, Counter
 import ast
 from json import JSONDecoder
@@ -13,16 +14,24 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
-from pipe import select, take, tee
+from pipe import select, take, tee, Pipe
 import jieba
 import pkuseg
 
+sys.path.append(os.path.join(os.path.abspath(os.path.curdir), '..'))
 from search_engine.build_index import load_index
 from search_engine.init_logger import init_logger
 from search_engine.process import tokenize
 
 FILENAME = datetime.now().strftime('query%Y-%b-%d_%H-%M-%S.log')
 logger = init_logger(logging.getLogger(), FILENAME)
+
+
+@Pipe
+def get_abstract(iterable):
+    for idx in iterable:
+        with open('../pure/' + str(idx) + '.txt', 'r', encoding='utf-8') as f:
+            yield re.sub(r'\s+', ' ', f.read())[:30]
 
 
 class Query:
@@ -40,7 +49,24 @@ class Query:
         #self.cutter = seg.cut
         self.cutter = tokenize
 
+    def server_query(self, query: ast.Bytes, top: int = 20) -> List[Tuple[str, str]]:
+        pages = self._query(query.decode(), top)
+        if len(pages) > 0:
+            abstract = list(pages | get_abstract)
+            results = list(pages | select(lambda x: self.idx2url[str(x)]))
+        else:
+            abstract = [query]
+            results = ['']
+        return list(zip(results, abstract))
+
     def query(self, query: str, top: int = 20) -> List[str]:
+        pages = self._query(query, top)
+        pages = list(pages | select(lambda x: self.idx2url[str(x)]))
+        logger.debug(pages)
+        return pages
+
+    def _query(self, query: str, top: int = 20) -> List[int]:
+
         queries = query.split(' ')
         q_count = len(queries)
         qt = Counter(self.cutter(query))
@@ -105,8 +131,6 @@ class Query:
         else:
             logger.debug(f'====          inf          =====')
 
-        logger.debug(pages)
-        pages = list(pages | select(lambda x: self.idx2url[str(x)]))
         logger.debug(pages)
              
         return pages
