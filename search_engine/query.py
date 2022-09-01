@@ -74,9 +74,7 @@ class Query:
                 s = np.log(len(re.findall(pattern, f.read())) / q_count + 1) * 2
                 minus[docid] -= s
                 logger.debug(s)
-        logger.debug(f'std {minus.std()}, avg {minus.sum() / minus.shape[0]}')
-        minus *= np.log10(1 / np.count_nonzero(minus) + 1)
-        logger.debug(minus.std())
+        minus *= np.log10(20 / np.count_nonzero(minus))
         scores += minus
 
         pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
