@@ -18,7 +18,7 @@ def html2pure(html: str) -> str:
     # contents = (soup.head, soup.body) | where(lambda x: x is not None) | select(lambda x: x.contents) | traverse \
     #                                   | where(lambda x: x.name not in filtration)
     # pure = '\n'.join(tag.get_text().strip() for tag in contents)
-    regex = re.compile('row.*|wx|wb|footer|name|current|title|.*menu.*|breadcrumb|jg')
+    regex = re.compile('row.*|wx|wb|footer|name|current|title|.*menu.*|breadcrumb')
     filteration = []
     filteration.extend(soup.find_all('div', {'class': regex}))
     filteration.extend(soup.find_all('title'))

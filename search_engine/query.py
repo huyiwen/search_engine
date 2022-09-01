@@ -42,9 +42,11 @@ class Query:
         queries = query.split(' ')
         q_count = len(queries)
         qt = Counter(self.cutter(query))
-        pattern = '|'.join(set(queries) - set(qt.items()))
-        logger.info(f'query={query} ({q_count}) {qt.items()}')
+        pattern = '|'.join(set(queries) - set(qt.keys()))
+        to_add_queries = set(qt.keys()) - set(queries)
+        logger.info(f'query={query} ({q_count}) {pattern}')
         scores = np.zeros(self.doc_num)
+        add = defaultdict(lambda: np.zeros_like(scores))
 
         for q, c in qt.items():
             intersection = self.idx2vec.index.intersection([q])
@@ -59,7 +61,13 @@ class Query:
             #every_scores[q] = top_20
             logger.debug(f"query scores:\n{top_20}\n")
 
-            scores[pairs.index] -= pairs[['score']].values.squeeze()
+            if q in to_add_queries:
+                temp = np.zeros(self.doc_num)
+                temp[pairs.index] += pairs[['score']].values.squeeze()
+                scores -= temp
+                add[q] += temp
+            else:
+                scores[pairs.index] -= pairs[['score']].values.squeeze()
 
         #every_scores.dropna(how='all', inplace=True)
         #logger.debug(f'every_scores:\n{every_scores}')
@@ -69,18 +77,22 @@ class Query:
         logger.debug(pages)
         logger.debug(sorted(scores)[:20])
         minus = defaultdict(lambda: np.zeros_like(scores))
-        for docid in pages:
-            with open('../pure/' + str(docid) + '.txt') as f:
-                for w, c in Counter(re.findall(pattern, f.read())).items():
-                    s = np.log(c/ q_count + 1) * 2
-                    minus[w][docid] -= s
-                    logger.debug(s)
-        for m in minus:
-            scores += minus[m] * np.log10(21 / np.count_nonzero(minus[m]))
+        if pattern:
+            for docid in pages:
+                with open('../pure/' + str(docid) + '.txt') as f:
+                    for w, c in Counter(re.findall(pattern, f.read())).items():
+                        s = np.log(c/ q_count + 1) * 2
+                        minus[w][docid] -= s
+                        logger.debug(s)
+            for q in add:
+                scores += add[q]
+            for m in minus:
+                scores += minus[m] * np.log10(25 / np.count_nonzero(minus[m]))
 
         pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
         logger.debug(sorted(scores)[:20])
 
+        logger.debug(pages)
         pages = list(pages | select(lambda x: self.idx2url[str(x)]))
         logger.debug(pages)
              
