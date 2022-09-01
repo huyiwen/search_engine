@@ -33,6 +33,9 @@ class Query:
         with open('../json/2022-Aug-30_19-51-57.json', 'r', encoding='utf-8') as f:
             self.idx2url = decoder.decode(f.read())
         self.idx2vec = load_index().set_index('keyword')
+        logger.debug(self.idx2vec.loc['养老'])
+        logger.debug(self.idx2vec.loc['外籍'])
+        logger.debug(self.idx2vec.loc['核算'])
         self.doc_num = int(self.idx2vec.docid.max()) + 1
         seg = pkuseg.pkuseg('news')
         #self.cutter = seg.cut
@@ -81,13 +84,13 @@ class Query:
             for docid in pages:
                 with open('../pure/' + str(docid) + '.txt') as f:
                     for w, c in Counter(re.findall(pattern, f.read())).items():
-                        s = np.log(c/ q_count + 1) * 2
+                        s = np.log10(c + 8)
                         minus[w][docid] -= s
                         logger.debug(s)
             for q in add:
                 scores += add[q]
             for m in minus:
-                scores += minus[m] * np.log10(25 / np.count_nonzero(minus[m]))
+                scores += minus[m] * np.log10(40 / np.count_nonzero(minus[m]))
 
         pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
         logger.debug(sorted(scores)[:20])

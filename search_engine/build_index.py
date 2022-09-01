@@ -44,6 +44,7 @@ def get_scores(source: Iterable[Tuple[Iterable[str], int]], save: bool = True) -
     tf = tf.groupby(['keyword', 'docid'], as_index=False).size().rename(columns={'size': 'tf'}, copy=False)
     tf['tf'] = tf[['tf']].transform(lambda x: np.log10(x) + 1).astype('float32')
     print(tf.describe())
+    print(tf.set_index('keyword').loc['核算'])
 
     # print('Inverse Document Frequency')
     idf = tf.groupby('keyword', as_index=False).size().rename(columns={'size': 'idf'})
@@ -56,8 +57,10 @@ def get_scores(source: Iterable[Tuple[Iterable[str], int]], save: bool = True) -
     # print('L2 Norm')
     l2norm = tf.rename(columns={'tf': 'l2norm'})
     l2norm['l2norm'] = l2norm.groupby('docid')[['l2norm']].transform(lambda x: x ** 2)
-    l2norm = l2norm.groupby('docid')[['l2norm']].agg('sum').agg('sqrt')
+    l2norm = l2norm.groupby('docid')[['l2norm']].agg('sum').agg('sqrt').transform(np.log2)
     l2norm_factors = l2norm.l2norm.values[tf.docid.factorize(sort=True)[0]]
+    print(l2norm.loc[78])
+    print(l2norm.describe())
     del l2norm
 
     # print('TF-IDF Score')
