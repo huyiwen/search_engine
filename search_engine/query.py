@@ -41,12 +41,16 @@ class Query:
         #self.cutter = seg.cut
         self.cutter = tokenize
 
-    def query(self, query: str) -> List[str]:
+    def query(self, query: str, top: int = 20) -> List[str]:
         queries = query.split(' ')
         q_count = len(queries)
         qt = Counter(self.cutter(query))
-        pattern = '|'.join(set(queries) - set(qt.keys()))
-        to_add_queries = set(qt.keys()) - set(queries)
+        pattern = set(queries) - set(qt.keys())
+        to_add_queries = defaultdict(list)
+        for p in pattern:
+            for w in self.cutter(p):
+                to_add_queries[w].append(p)
+        pattern = '|'.join(pattern)
         logger.info(f'query={query} ({q_count}) {pattern}')
         scores = np.zeros(self.doc_num)
         add = defaultdict(lambda: np.zeros_like(scores))
@@ -68,7 +72,8 @@ class Query:
                 temp = np.zeros(self.doc_num)
                 temp[pairs.index] += pairs[['score']].values.squeeze()
                 scores -= temp
-                add[q] += temp
+                for p in to_add_queries[q]:
+                    add[p] += temp
             else:
                 scores[pairs.index] -= pairs[['score']].values.squeeze()
 
@@ -76,24 +81,30 @@ class Query:
         #logger.debug(f'every_scores:\n{every_scores}')
         #logger.debug(f'every_scores:\n{every_scores.loc[418]}')
 
-        pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
+        pages = np.argsort(scores, axis=0)[:top].squeeze().tolist()
         logger.debug(pages)
-        logger.debug(sorted(scores)[:20])
+        logger.debug(sorted(scores)[:top])
         minus = defaultdict(lambda: np.zeros_like(scores))
         if pattern:
             for docid in pages:
                 with open('../pure/' + str(docid) + '.txt') as f:
                     for w, c in Counter(re.findall(pattern, f.read())).items():
-                        s = np.log10(c + 8)
+                        s = np.log10(c + 9)
                         minus[w][docid] -= s
                         logger.debug(s)
-            for q in add:
-                scores += add[q]
             for m in minus:
-                scores += minus[m] * np.log10(40 / np.count_nonzero(minus[m]))
+                scores -= minus[m] * np.log10(top / np.count_nonzero(minus[m]) + 9) / minus[m].min() * add[m].max()
+                scores += add[m]
 
-        pages = np.argsort(scores, axis=0)[:20].squeeze().tolist()
-        logger.debug(sorted(scores)[:20])
+        pages = np.argsort(scores, axis=0)[:top].squeeze().tolist()
+        scores = sorted(scores)[:top]
+        logger.debug(scores)
+        if scores[1] != 0:
+            logger.debug(f'===={scores[0] / scores[1]}=====')
+            if scores[0] / scores[1] < 1.4 and scores[0] * scores[1] > 0 and - scores[0] + scores[1] < 1:
+                logger.warning(f'!!!!{pages[0]} {pages[1]}!!!!!')
+        else:
+            logger.debug(f'====          inf          =====')
 
         logger.debug(pages)
         pages = list(pages | select(lambda x: self.idx2url[str(x)]))
