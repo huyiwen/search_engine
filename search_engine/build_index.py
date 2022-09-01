@@ -111,7 +111,7 @@ def build_index(directory: str = '../saved_pages', quick_test: int = 0, batch: i
 
 
 def load_index():
-    return torch.load('index.pth')
+    return torch.load('../search_engine/index.pth')
 
 
 def main():

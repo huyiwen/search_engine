@@ -17,10 +17,9 @@ from pipe import select, take, tee
 import jieba
 import pkuseg
 
-from reverse_dict import get_idx2url
-from build_index import load_index, get_scores
-from init_logger import init_logger
-from process import tokenize
+from search_engine.build_index import load_index
+from search_engine.init_logger import init_logger
+from search_engine.process import tokenize
 
 FILENAME = datetime.now().strftime('query%Y-%b-%d_%H-%M-%S.log')
 logger = init_logger(logging.getLogger(), FILENAME)
