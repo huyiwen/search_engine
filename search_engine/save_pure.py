@@ -25,12 +25,20 @@ def save_tokenized(iterable, direcotry):
 
 if __name__ == '__main__':
     m = input('[p]ure or [t]okenize: ')
-    f = input('direcotry/file: ') or '../saved_pages'
+    if m == 'p':
+        print('pure file will be saved to ../pure/')
+    elif m == 't':
+        print('tokenized file will be saved  to ../saved_pages/')
+    else:
+        exit(1)
+
+    f = input('direcotry/file of original html file: ') or '../saved_pages'
     if os.path.isfile(f):
         fs = [f]
         f = os.path.dirname(f)
     else:
         fs = os.listdir(f)
+
     if m == 'p':
         save_pure(fs, f)
     elif m == 't':

@@ -21,7 +21,6 @@ def html2pure(html: str) -> str:
     regex = re.compile('row.*|wx|wb|footer|name|current|title|.*menu.*|breadcrumb')
     filteration = []
     filteration.extend(soup.find_all('div', {'class': regex}))
-    filteration.extend(soup.find_all('title'))
     for div in filteration:
         div.decompose()
     pure = soup.get_text()
