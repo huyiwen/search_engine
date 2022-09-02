@@ -45,14 +45,13 @@ npm run dev
 
 下面列举了两次计算分数所采用的公式。选用的原由详细记录于日志手册及 `git` 历史中。
 
-- `Term-Frequency` 采用对数词频率：$\log_{10}(tf)+1$
-- `Inverse-Document-Frequency` 采用对数逆文档频率：$\ln(N/df)$
-- `L2 Norm` 采用对数L2范数：$\log_2\left(\sqrt{x_1^2+\cdots+x_n^2}\right)$
-- `Phased-Score` 使用 `TF-IDF` 分数计算余弦相似度：$\cos(\mathbf{q},\mathbf{d})=\sum{\mathbf{q}_i\ \cdot\  \mathbf{d}_i}\ /\ L2Norm(\mathbf{d})$
-- `Long-Term-Frequency` 采用平滑的对数词频率：$\log_{10}(ltf+9)$
-
-- `Inverse-Document-Frequency` 采用放缩的平滑对数逆文档频率：$\log_{10}(N/df+9)\ /\ \max(\mathrm{TF\mbox{-}IDF}_{long~terms})\times\max(\mathrm{TF\mbox{-}IDF}_{short~terms})$
-- `Final-Score` 使用排除重复词的两次 `TF-IDF` 之和：$\mathrm{TF\mbox{-}IDF}_{short~terms}+\mathrm{TF\mbox{-}IDF}_{long~terms}$
+- `Term-Frequency` 采用对数词频率： $\log_{10}(tf)+1$
+- `Inverse-Document-Frequency` 采用对数逆文档频率： $\ln(N/df)$
+- `L2 Norm` 采用对数L2范数： $\log_2\left(\sqrt{x_1^2+\cdots+x_n^2}\right)$
+- `Phased-Score` 使用 `TF-IDF` 分数计算余弦相似度： $\cos(\mathbf{q},\mathbf{d})=\sum{\mathbf{q}_i\ \cdot\  \mathbf{d}_i}\ /\ L2Norm(\mathbf{d})$
+- `Long-Term-Frequency` 采用平滑的对数词频率： $\log_{10}(ltf+9)$
+- `Inverse-Document-Frequency` 采用放缩的平滑对数逆文档频率： $\log_{10}(N/df+9)\ /\ \max(\mathrm{TF\mbox{-}IDF}_{long~terms}) \times \max(\mathrm{TF\mbox{-}IDF}_{short~terms})$
+- `Final-Score` 使用排除重复词的两次 `TF-IDF` 之和： $\mathrm{TF\mbox{-}IDF}_{short~terms}+\mathrm{TF\mbox{-}IDF}_{long~terms}$
 
 ### 日志手册及核心亮点
 
@@ -118,6 +117,6 @@ search_engine
 
 - 由衷地感谢中国人民大学高瓴人工智能学院赵鑫教授精彩授课以及三位课程助教耐心的帮助。
 
-- 感谢https://github.com/xitu/gold-miner/blob/master/TODO1/developing-a-single-page-app-with-flask-and-vuejs.md对于构建界面展示的启发性作用。
+- 感谢[developing-a-single-page-app-with-flask-and-vuejs](https://github.com/xitu/gold-miner/blob/master/TODO1/developing-a-single-page-app-with-flask-and-vuejs.md)对于构建界面展示的启发性作用。
 
     
