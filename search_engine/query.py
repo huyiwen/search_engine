@@ -31,7 +31,7 @@ logger = init_logger(logging.getLogger(), FILENAME)
 def get_abstract(iterable):
     for idx in iterable:
         with open('../pure/' + str(idx) + '.txt', 'r', encoding='utf-8') as f:
-            yield re.sub(r'\s+', ' ', f.read())[:30]
+            yield re.sub(r'\s+', ' ', f.read())[:60]
 
 
 class Query:
@@ -120,8 +120,8 @@ class Query:
                         minus[w][docid] -= s
                         logger.debug(s)
             for m in minus:
-                scores -= minus[m] * np.log10(top / np.count_nonzero(minus[m]) + 9) / minus[m].min() * add[m].max()
-                scores += add[m]
+                scores -= minus[m] * np.log10(top / np.count_nonzero(minus[m]) + 9) / minus[m].min() * add[m].max() / 2
+                scores += add[m] / 2
 
         pages = np.argsort(scores, axis=0)[:top].squeeze().tolist()
         scores = sorted(scores)[:top]
