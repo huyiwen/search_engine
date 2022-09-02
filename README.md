@@ -46,6 +46,7 @@ npm run dev
 - `Term-Frequency` 采用对数词频率：$\log_{10}(tf)+1$
 - `Inverse-Document-Frequency` 采用对数逆文档频率：$\ln(N/df)$
 - `L2 Norm` 采用对数L2范数：$\log_2\left(\sqrt{x_1^2+\cdots+x_n^2}\right)$
+- 
 
 ### 日志手册
 
@@ -61,6 +62,35 @@ npm run dev
 ## 实现流程与代码细节
 
 实现流程包括网页爬取、索引建立、纯文本构建、自动评测和网页界面。您可以在项目框架图中找到更详细的信息。也可以在初始化与快速上手中找到流程代码。
+
+### 项目结构
+
+```text
+search_engine
+├── assets           # 项目资源
+├── report           # 实验报告
+├── index            # 索引文件
+├── json             # URL与DOCID映射文件
+├── pure             # 纯文本文件
+├── saved_pages      # HTML和分词文件
+├── search_engine    # 搜索代码
+│   ├── spider.py            # 爬虫
+│   ├── build_index.py       # 构建索引
+│   ├── save_pure.py         # 构建纯文本文件
+│   ├── query.py             # 查询
+│   ├── client.py            # 自动评测
+│   ├── process.py           # utils
+│   ├── reverse_dict.py      # utils
+│   ├── init_logger.py       # logging
+│   ├── test_get_links.py    # unitest
+│   ├── test_get_scores.py   # unitest
+│   ├── test_tokenize.py     # unitest
+│   └── test_url2str.py      # unitest
+├── server           # 服务端代码
+└── webui            # 前端代码
+```
+
+### 代码细节
 
 本项目利用 `pipe` ，将 `R` 和 `bash` 引以为傲的管道符融合在了项目中，兼顾代码简洁与效率。构建索引速度高达 $1000it/s$ 。
 
@@ -78,6 +108,10 @@ npm run dev
 
 ## 实验感想
 
-## Reference
+## 致谢
 
-- https://github.com/xitu/gold-miner/blob/master/TODO1/developing-a-single-page-app-with-flask-and-vuejs.md
+- 由衷地感谢中国人民大学高瓴人工智能学院赵鑫教授精彩授课以及三位课程助教耐心的帮助。
+
+- 感谢https://github.com/xitu/gold-miner/blob/master/TODO1/developing-a-single-page-app-with-flask-and-vuejs.md对于构建界面展示的启发性作用。
+
+    
