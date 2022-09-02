@@ -112,6 +112,8 @@ class Query:
         minus = defaultdict(lambda: np.zeros_like(scores))
         if pattern:
             for docid in pages:
+                if not os.path.exists('../pure/' + str(docid) + '.txt'):
+                    continue
                 with open('../pure/' + str(docid) + '.txt') as f:
                     for w, c in Counter(re.findall(pattern, f.read())).items():
                         s = np.log10(c + 9)
